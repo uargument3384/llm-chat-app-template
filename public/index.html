@@ -221,7 +221,6 @@
 					try {
 						state.chats = JSON.parse(saved);
 					} catch (e) {
-						console.error("Failed to load history", e);
 						state.chats = [];
 					}
 				}
@@ -265,7 +264,7 @@
 					title: 'New Chat',
 					messages: [{
 						role: 'assistant',
-						content: "Hello! I'm a local chat assistant. Messages are saved in your browser."
+						content: "Hello! Messages are saved in your browser."
 					}]
 				};
 				state.chats.unshift(newChat);
@@ -328,7 +327,6 @@
 				elements.userInput.style.height = 'auto';
 				elements.sendButton.disabled = true;
 
-				// Update User Message
 				currentChat.messages.push({ role: 'user', content: text });
 				if (currentChat.messages.length === 2) { 
 					currentChat.title = text.slice(0, 30);
@@ -336,9 +334,7 @@
 				appendMessageUI('user', text);
 				saveToLocal();
 
-				// Prepare for Stream
-				const assistantMsgDiv = appendMessageUI('assistant', '');
-				let fullResponse = "";
+				const assistantMsgDiv = appendMessageUI('assistant', '<span style="color:#888; font-style:italic;">Thinking...</span>');
 
 				try {
 					const response = await fetch('/api/chat', {
@@ -349,39 +345,22 @@
 						})
 					});
 
-					const reader = response.body.getReader();
-					const decoder = new TextDecoder();
+					if (!response.ok) throw new Error('Network response was not ok');
 
-					while (true) {
-						const { done, value } = await reader.read();
-						if (done) break;
-						
-						const chunk = decoder.decode(value, { stream: true });
-						const lines = chunk.split('\n');
-						
-						for (const line of lines) {
-							if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-								try {
-									const data = JSON.parse(line.slice(6));
-									if (data.response) {
-										fullResponse += data.response;
-										assistantMsgDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullResponse));
-										elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-									}
-								} catch (e) {}
-							}
-						}
-					}
+					const data = await response.json();
+					const fullResponse = data.response;
 
+					assistantMsgDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullResponse));
+					
 					currentChat.messages.push({ role: 'assistant', content: fullResponse });
 					saveToLocal();
 
 				} catch (error) {
-					console.error(error);
 					assistantMsgDiv.textContent = "Error generating response.";
 				} finally {
 					state.isGenerating = false;
 					elements.sendButton.disabled = false;
+					elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
 				}
 			}
 
