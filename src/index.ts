@@ -26,16 +26,15 @@ export default {
 					...messages
 				];
 
-				const stream = await env.AI.run(MODEL_ID, {
+				const result = await env.AI.run(MODEL_ID, {
 					messages: inputMessages,
-					stream: true,
+					stream: false,
+					max_tokens: 4096
 				});
 
-				return new Response(stream, {
+				return new Response(JSON.stringify(result), {
 					headers: {
-						"content-type": "text/event-stream",
-						"cache-control": "no-cache",
-						"connection": "keep-alive",
+						"content-type": "application/json",
 						"Access-Control-Allow-Origin": "*",
 					},
 				});
