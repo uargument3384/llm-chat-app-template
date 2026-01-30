@@ -1,6 +1,6 @@
 import { Env } from "./types";
 
-const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
+const MODEL_ID = "@cf/openai/gpt-oss-120b";
 
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
